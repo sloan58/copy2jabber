@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.app')
 
 @section('main-content')
 
@@ -19,6 +19,12 @@
             {{ session('status') }}
         </div>
     @endif
+
+    <div class="row">
+        @livewire('user-search')
+    </div>
+
+    <hr>
 
     <div class="row">
 

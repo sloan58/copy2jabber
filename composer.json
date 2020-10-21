@@ -17,7 +17,9 @@
         "laravel/legacy-factories": "^1.0",
         "laravel/tinker": "^2.0",
         "laravel/ui": "^3.0",
-        "livewire/livewire": "^2.3"
+        "livewire/livewire": "^2.3",
+        "ext-soap": "*",
+        "ext-json": "*"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",
