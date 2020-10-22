@@ -1,8 +1,11 @@
 <div class="container">
+    @if (session('status'))
+        <div class="alert alert-danger border-left-danger" role="alert">
+            {{ session('status') }}
+        </div>
+    @endif
     <div class="row">
-        <!-- Content Column -->
         <div class="col-lg-6 mb-4">
-            <!-- Project Card Example -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">Search for a User</h6>
@@ -10,7 +13,7 @@
                 <div class="card-body">
                     <form wire:submit.prevent="search" class="mr-auto ml-md-3 my-2 my-md-0 mw-100 pb-2 navbar-search">
                         <div class="input-group">
-                            <input wire:model="username" type="text" class="form-control bg-light" placeholder="Search...." aria-label="Search" aria-describedby="basic-addon2">
+                            <input wire:model="search" type="text" class="form-control bg-light" placeholder="{{ empty($search) ? 'Search....' : $search }}" aria-label="Search" aria-describedby="basic-addon2">
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="submit">
                                     <i class="fas fa-search fa-sm"></i>
@@ -18,19 +21,18 @@
                             </div>
                         </div>
                     </form>
-                    @error('username') <span class="text-danger pl-4 pt-1">{{ $message }}</span> @enderror
+                    @error('search') <span class="text-danger pl-4 pt-1">{{ $message }}</span> @enderror
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6 mb-4">
-            <!-- Illustrations -->
             <div class="card shadow">
                 <div class="card-header">
                     <h6 class="font-weight-bold text-primary">
-                        Results:
+                        Select a User to Provision:
                         <div class="float-right">
-                            <div wire:loading wire:target="search">
+                            <div wire:loading.delay wire:target="search">
                                 <div class="spinner-border text-primary float-right" role="status">
                                     <span class="sr-only">Loading...</span>
                                 </div>
@@ -40,13 +42,9 @@
                 </div>
                 <div class="card-body">
 
-                    @if($queryError)
-                        <span class="text-danger pt-1">{{ $queryError}}</span>
-                    @endif
-
                     @foreach($userList as $user)
-                        <a href="#" wire:click.prevent="getUserDevices('{{$user['userid']}}')">
-                            <div class="card bg-primary text-white shadow mb-2">
+                        <a href="#" wire:click.prevent="getUserDevices('{{ $user['userid'] }}')">
+                            <div class="card bg-{{ $selectedUser == $user['userid'] ? 'success': 'primary'  }} text-white shadow mb-2">
                                 <div class="card-body">
                                     {{ $user['firstname'] }}  {{ $user['lastname'] }} [{{ $user['userid']}}]
                                     <div class="text-white-50 small float-right">{{ $user['mailid'] }}</div>
@@ -59,16 +57,139 @@
             </div>
         </div>
     </div>
+
     <div class="row">
-        <div wire:loading wire:target="getUserDevices">
-            <div class="spinner-border text-primary float-right" role="status">
-                <span class="sr-only">Loading...</span>
+        <div class="card shadow col-md-12 mb-4">
+            <div class="card-header">
+                <h6 class="font-weight-bold text-primary">
+                    Step 1: Select a Device to Copy
+                    <div class="float-right">
+                        <div wire:loading.delay wire:target="getUserDevices">
+                            <div class="spinner-border text-primary float-right" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </h6>
+            </div>
+            <div class="card-body">
+                @if(!empty($nonJabberDevices))
+                    @foreach($nonJabberDevices as $device)
+                        <a href="#" wire:click.prevent="getDeviceLines('{{ $device['name'] }}')">
+                            <div class="card bg-{{ $selectedDevice == $device['name'] ? 'success': 'primary'  }} text-white shadow mb-2">
+                                <div class="card-body">
+                                    {{ $device['model'] }}
+                                    <div class="text-white-50 small float-right">{{ $device['name'] }} | {{ $device['description'] }}</div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                @endif
             </div>
         </div>
-        <ul>
-            @foreach($userDevices as $device)
-                <li>{{ $device['name'] }}: {{ $device['description'] }}</li>
-            @endforeach
-        </ul>
     </div>
+
+    <div class="row">
+        <div class="card shadow col-md-12 mb-4">
+            <div class="card-header">
+                <h6 class="font-weight-bold text-primary">
+                    Step 2: Select a Primary Line:
+                    <div class="float-right">
+                        <div wire:loading.delay wire:target="getDeviceLines">
+                            <div class="spinner-border text-primary float-right" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </h6>
+            </div>
+            <div class="card-body">
+                @if(!empty($deviceLines))
+                    @foreach($deviceLines as $line)
+                        <a href="#" wire:click.prevent="setPrimaryLine('{{$line['pkid']}}')">
+                            <div class="card bg-{{ isset($primaryLine['pkid']) &&  $primaryLine['pkid'] == $line['pkid'] ? 'success': 'primary'  }} text-white shadow mb-2">
+                                <div class="card-body">
+                                    {{ $line['numplanindex'] }}: {{ $line['dnorpattern'] }} in {{ $line['partition'] }}
+                                    <div class="text-white-50 small float-right">{{ $line['description'] }}</div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="card shadow col-md-12 mb-4">
+            <div class="card-header">
+                <h6 class="font-weight-bold text-primary">
+                    Step 3: Select a Jabber device type to Provision:
+                    <div class="float-right">
+                        <div wire:loading.delay wire:target="setPrimaryLine">
+                            <div class="spinner-border text-primary float-right" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </h6>
+            </div>
+            <div class="card-body">
+                @if(!empty($primaryLine))
+                    @foreach($jabberDevicesList as $enum => $name)
+                        @if(!in_array($enum, array_column($currentJabberDevices, 'enum')))
+                            <a href="#" wire:click.prevent="selectJabberToProvision('{{$name}}')">
+                                <div class="card bg-{{ $name === $jabberModelToAdd ? 'success': 'primary'}} text-white shadow mb-2">
+                                    <div class="card-body">
+                                        {{ $name }}
+                                        <div class="text-white-50 small float-right">{{ $name === $jabberModelToAdd ? '' : 'Click to Add' }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        @else
+                            <div class="card bg-secondary text-white shadow mb-2">
+                                <div class="card-body">
+                                    {{ $name }}
+                                    <div class="text-white-50 small float-right">Configured</div>
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="card shadow col-md-12 mb-4">
+            <div class="card-header">
+                <h6 class="font-weight-bold text-danger">
+                    Provisioning Confirmation:
+                    <div class="float-right">
+                        <div wire:loading.delay wire:target="selectJabberToProvision">
+                            <div class="spinner-border text-primary float-right" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </h6>
+            </div>
+            @if($stagedForProvisioning)
+            <div class="card-body">
+                <h5>
+                    The following operation will take the settings from <b>{{ $selectedDevice }}</b> and copy those into a new
+                    Jabber device, <b>{{ $jabberModelToAdd }}</b>.  It will use the primary line <b>{{ $primaryLine['dnorpattern'] }}</b>
+                    in the <b>{{ $primaryLine['partition'] }}</b> and associate the device with the user <b>{{ $selectedUser }}</b>.
+                    <br><br>
+                    Please select 'Accept' to provision the device or 'Cancel' to clear this operation.
+                </h5>
+            </div>
+            <div class="card-footer text-muted float-right">
+                <button wire:click.prevent="proceedToProvisioning" type="button" class="btn btn-success">Accept</button>
+                <button wire:click.prevent="cancelOperation" type="button" class="btn btn-danger">Cancel</button>
+            </div>
+            @endif
+        </div>
+    </div>
+
 </div>
