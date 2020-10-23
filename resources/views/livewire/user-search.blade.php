@@ -1,7 +1,10 @@
-<div class="container">
+<div class="container" xmlns:wire="http://www.w3.org/1999/xhtml">
     @if (session('status'))
-        <div class="alert alert-danger border-left-danger" role="alert">
-            {{ session('status') }}
+        <div class="alert alert-{{ session('alert-class') ?? 'danger' }} border-left-{{ session('alert-class') ?? 'danger' }}" role="alert">
+                {!! session('status') !!}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
         </div>
     @endif
     <div class="row">
@@ -75,7 +78,7 @@
             <div class="card-body">
                 @if(!empty($nonJabberDevices))
                     @foreach($nonJabberDevices as $device)
-                        <a href="#" wire:click.prevent="getDeviceLines('{{ $device['name'] }}')">
+                        <a href="#" wire:click.prevent="deviceSelectionMade('{{ $device['name'] }}')">
                             <div class="card bg-{{ $selectedDevice == $device['name'] ? 'success': 'primary'  }} text-white shadow mb-2">
                                 <div class="card-body">
                                     {{ $device['model'] }}
@@ -95,7 +98,7 @@
                 <h6 class="font-weight-bold text-primary">
                     Step 2: Select a Primary Line:
                     <div class="float-right">
-                        <div wire:loading.delay wire:target="getDeviceLines">
+                        <div wire:loading.delay wire:target="deviceSelectionMade">
                             <div class="spinner-border text-primary float-right" role="status">
                                 <span class="sr-only">Loading...</span>
                             </div>
@@ -136,20 +139,20 @@
             </div>
             <div class="card-body">
                 @if(!empty($primaryLine))
-                    @foreach($jabberDevicesList as $enum => $name)
+                    @foreach($jabberDevicesList as $enum => $details)
                         @if(!in_array($enum, array_column($currentJabberDevices, 'enum')))
-                            <a href="#" wire:click.prevent="selectJabberToProvision('{{$name}}')">
-                                <div class="card bg-{{ $name === $jabberModelToAdd ? 'success': 'primary'}} text-white shadow mb-2">
+                            <a href="#" wire:click.prevent="selectJabberToProvision('{{ $enum }}')">
+                                <div class="card bg-{{ (isset($jabberModelToAdd['type']) && $details['type'] === $jabberModelToAdd['type']) ? 'success': 'primary'}} text-white shadow mb-2">
                                     <div class="card-body">
-                                        {{ $name }}
-                                        <div class="text-white-50 small float-right">{{ $name === $jabberModelToAdd ? '' : 'Click to Add' }}</div>
+                                        {{ $details['type'] }}
+                                        <div class="text-white-50 small float-right">{{ (isset($jabberModelToAdd['type']) && $details['type'] === $jabberModelToAdd['type']) ? '' : 'Click to Add' }}</div>
                                     </div>
                                 </div>
                             </a>
                         @else
                             <div class="card bg-secondary text-white shadow mb-2">
                                 <div class="card-body">
-                                    {{ $name }}
+                                    {{ $details['type'] }}
                                     <div class="text-white-50 small float-right">Configured</div>
                                 </div>
                             </div>
@@ -171,6 +174,11 @@
                                 <span class="sr-only">Loading...</span>
                             </div>
                         </div>
+                        <div wire:loading.delay wire:target="proceedToProvisioning">
+                            <div class="spinner-border text-primary float-right" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </h6>
             </div>
@@ -178,8 +186,8 @@
             <div class="card-body">
                 <h5>
                     The following operation will take the settings from <b>{{ $selectedDevice }}</b> and copy those into a new
-                    Jabber device, <b>{{ $jabberModelToAdd }}</b>.  It will use the primary line <b>{{ $primaryLine['dnorpattern'] }}</b>
-                    in the <b>{{ $primaryLine['partition'] }}</b> and associate the device with the user <b>{{ $selectedUser }}</b>.
+                    Jabber device, <b>{{ $jabberModelToAdd['type'] }}</b>.  It will use the primary line <b>{{ $primaryLine['dnorpattern'] }}</b>
+                    in the <b>{{ $primaryLine['partition'] }}</b> and associate the device with the user <b>{{ $selectedUser['userid'] }}</b>.
                     <br><br>
                     Please select 'Accept' to provision the device or 'Cancel' to clear this operation.
                 </h5>
