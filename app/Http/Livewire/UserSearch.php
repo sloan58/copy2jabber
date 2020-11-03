@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use SoapClient;
+use App\Models\Ucm;
 use Livewire\Component;
 
 class UserSearch extends Component
@@ -17,6 +18,10 @@ class UserSearch extends Component
     public $nonJabberDevices = [];
     public $currentJabberDevices = [];
     public $jabberModelToAdd = '';
+    public $stagedForProvisioning = false;
+    public $ucmClusters = [];
+    public $selectedCluster = [];
+    public $newDeviceName = '';
     public $jabberDevicesList = [
         '562' => [
             'type' => 'Cisco Dual Mode for iPhone',
@@ -39,9 +44,29 @@ class UserSearch extends Component
             'length' => '12'
         ]
     ];
-    public $stagedForProvisioning = false;
 
+    /**
+     * Livewire component was mounted
+     */
+    public function mount()
+    {
+        $this->ucmClusters = Ucm::all();
+    }
 
+    /**
+     * UCM Cluster was selected
+     *
+     * @param $clusterId
+     */
+    public function clusterSelectionMade($clusterId)
+    {
+        $this->resetProps();
+        $this->selectedCluster = Ucm::find($clusterId);
+    }
+
+    /**
+     * Search for a UCM user by userid
+     */
     public function search()
     {
         $data = $this->validate([
@@ -50,28 +75,10 @@ class UserSearch extends Component
 
         $this->resetProps();
 
-        $axl = new SoapClient(storage_path('axl/AXLAPI.wsdl'),
-            [
-                'trace'=>1,
-                'exceptions'=>true,
-                'location'=>"https://10.175.200.10:8443/axl/",
-                'login'=>'Administrator',
-                'password'=>'A$h8urn!',
-                'stream_context' => stream_context_create([
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                            'ciphers' => 'SHA1'
-                        ]
-                    ]
-                ),
-            ]
-        );
-
         $search = strtolower($data['search']);
 
         try {
-            $res = $axl->executeSQLQuery([
+            $res = $this->getAxl()->executeSQLQuery([
                 'sql' => "SELECT userid, firstname, lastname, mailid FROM enduser WHERE lower(userid) LIKE '%$search%'"
             ]);
 
@@ -88,31 +95,18 @@ class UserSearch extends Component
         }
     }
 
+    /**
+     * Get devices associated to the selected user
+     *
+     * @param $selectedUser
+     */
     public function getUserDevices($selectedUser)
     {
 
         $this->selectedUser = $this->userList[array_search($selectedUser, array_column($this->userList, 'userid'))];
 
-        $axl = new SoapClient(storage_path('axl/AXLAPI.wsdl'),
-            [
-                'trace'=>1,
-                'exceptions'=>true,
-                'location'=>"https://10.175.200.10:8443/axl/",
-                'login'=>'Administrator',
-                'password'=>'A$h8urn!',
-                'stream_context' => stream_context_create([
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                            'ciphers' => 'SHA1'
-                        ]
-                    ]
-                ),
-            ]
-        );
-
         try {
-            $res = $axl->executeSQLQuery([
+            $res = $this->getAxl()->executeSQLQuery([
                 'sql' => "SELECT d.name, d.description, t.enum, t.name model FROM device d JOIN enduserdevicemap eudm ON eudm.fkdevice = d.pkid JOIN enduser eu ON eudm.fkenduser = eu.pkid JOIN typemodel t ON t.enum = d.tkmodel WHERE eu.userid = '{$this->selectedUser['userid']}'"
             ]);
 
@@ -142,30 +136,17 @@ class UserSearch extends Component
         }
     }
 
+    /**
+     * Source device was selected
+     *
+     * @param $device
+     */
     public function deviceSelectionMade($device)
     {
         $this->selectedDevice = $device;
 
-        $axl = new SoapClient(storage_path('axl/AXLAPI.wsdl'),
-            [
-                'trace'=>1,
-                'exceptions'=>true,
-                'location'=>"https://10.175.200.10:8443/axl/",
-                'login'=>'Administrator',
-                'password'=>'A$h8urn!',
-                'stream_context' => stream_context_create([
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                            'ciphers' => 'SHA1'
-                        ]
-                    ]
-                ),
-            ]
-        );
-
         try {
-            $res = $axl->getPhone([
+            $res = $this->getAxl()->getPhone([
                 'name' => $this->selectedDevice
             ]);
 
@@ -182,28 +163,14 @@ class UserSearch extends Component
 
     }
 
+    /**
+     * Get the lines associated
+     * with the selected device
+     */
     public function getDeviceLines()
     {
-        $axl = new SoapClient(storage_path('axl/AXLAPI.wsdl'),
-            [
-                'trace'=>1,
-                'exceptions'=>true,
-                'location'=>"https://10.175.200.10:8443/axl/",
-                'login'=>'Administrator',
-                'password'=>'A$h8urn!',
-                'stream_context' => stream_context_create([
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                            'ciphers' => 'SHA1'
-                        ]
-                    ]
-                ),
-            ]
-        );
-
         try {
-            $res = $axl->executeSQLQuery([
+            $res = $this->getAxl()->executeSQLQuery([
                 'sql' => "SELECT n.pkid, n.dnorpattern, n.description, m.numplanindex, p.name as partition FROM numplan n JOIN devicenumplanmap m ON n.pkid = m.fknumplan JOIN device d ON d.pkid = m.fkdevice JOIN routepartition p ON n.fkroutepartition = p.pkid WHERE d.name = '$this->selectedDevice'"
             ]);
 
@@ -218,50 +185,60 @@ class UserSearch extends Component
         }
     }
 
+    /**
+     * Set the line to be used for
+     * the new Jabber device
+     *
+     * @param $linePkid
+     */
     public function setPrimaryLine($linePkid)
     {
         $this->primaryLine = $this->deviceLines[array_search($linePkid, array_column($this->deviceLines, 'pkid'))];
         sleep(1);
     }
 
+    /**
+     * Set the new Jabber device type
+     *
+     * @param $jabberEnum
+     */
     public function selectJabberToProvision($jabberEnum)
     {
         $this->jabberModelToAdd = $this->jabberDevicesList[$jabberEnum];
+
+        $devicePrefix = $this->jabberModelToAdd['prefix'];
+        $deviceNameLength = $this->jabberModelToAdd['length'];
+        $this->newDeviceName = substr(
+            strtoupper($devicePrefix . $this->selectedUser['firstname'][0] . $this->selectedUser['lastname']),
+            0,
+            $deviceNameLength
+        );
+
         $this->stagedForProvisioning = true;
         sleep(1);
     }
 
+    /**
+     * Cancel provisioning
+     */
     public function cancelOperation()
     {
         $this->resetProps();
     }
 
+    /**
+     * Provision the new Jabber device
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function proceedToProvisioning()
     {
-        $axl = new SoapClient(storage_path('axl/AXLAPI.wsdl'),
-            [
-                'trace'=>1,
-                'exceptions'=>true,
-                'location'=>"https://10.175.200.10:8443/axl/",
-                'login'=>'Administrator',
-                'password'=>'A$h8urn!',
-                'stream_context' => stream_context_create([
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                            'ciphers' => 'SHA1'
-                        ]
-                    ]
-                ),
-            ]
-        );
-
-
-        $devicePrefix = $this->jabberModelToAdd['prefix'];
-        $deviceNameLength = $this->jabberModelToAdd['length'];
         $deviceType = $this->jabberModelToAdd['type'];
 
-        foreach($this->selectedDeviceDetails['lines']['line'] as $line) {
+        $jabberLine = [];
+        $lineIterator = isset($this->selectedDeviceDetails['lines']['line']) ? isset($this->selectedDeviceDetails['lines']['line'][0]) ? $this->selectedDeviceDetails['lines']['line'] : [$this->selectedDeviceDetails['lines']['line']] : [];
+
+        foreach($lineIterator as $line) {
             if($line['dirn']['pattern'] === $this->primaryLine['dnorpattern']) {
                 $jabberLine = $line;
                 $jabberLine['index'] = '1';
@@ -271,7 +248,7 @@ class UserSearch extends Component
         }
 
         $newPhone = [
-            'name' => substr(strtoupper($devicePrefix . $this->selectedUser['firstname'][0] . $this->selectedUser['lastname']), 0, $deviceNameLength),
+            'name' => $this->newDeviceName,
             'product' => $deviceType,
             'class' => 'Phone',
             'protocol' => 'SIP',
@@ -312,13 +289,47 @@ class UserSearch extends Component
         ];
 
         try {
-            $res = $axl->addPhone([
+            $res = $this->getAxl()->addPhone([
                 'phone' => $newPhone
             ]);
 
-            $this->resetProps();
-
             $url = sprintf('https://hq-cucm-pub.karmatek.io/ccmadmin/phoneEdit.do?key=%s', strtolower(str_replace(['{', '}'], '', $res->return)));
+
+        } catch(\SoapFault $e) {
+            logger()->error('Uh oh....', [
+                'message' => $e->getMessage()
+            ]);
+            $this->resetProps();
+            request()->session()->flash('status', $e->getMessage());
+            return redirect()->back();
+        }
+
+        try {
+            $res = $this->getAxl()->getUser([
+                'userid' => $this->selectedUser['userid']
+            ]);
+
+            $associatedDeviceList = isset($res->return->user->associatedDevices->device) ? is_array($res->return->user->associatedDevices->device) ? $res->return->user->associatedDevices->device : [$res->return->user->associatedDevices->device] : [];
+            $associatedDeviceList[] = $this->newDeviceName;
+
+        } catch(\SoapFault $e) {
+            logger()->error('Uh oh....', [
+                'message' => $e->getMessage()
+            ]);
+            $this->resetProps();
+            request()->session()->flash('status', $e->getMessage());
+            return redirect()->back();
+        }
+
+        try {
+            $this->getAxl()->updateUser([
+                'userid' => $this->selectedUser['userid'],
+                'associatedDevices' => [
+                    'device' => $associatedDeviceList
+                ]
+            ]);
+
+            $this->resetProps();
 
             request()->session()->flash('status', "Device Provisioned!  You can visit the device page at <a href=\"$url\" target=\"_blank\" >by clicking here.</a>");
             request()->session()->flash('alert-class', 'success');
@@ -332,6 +343,37 @@ class UserSearch extends Component
         }
     }
 
+    /**
+     * Get the AXL API client
+     *
+     * @return SoapClient
+     * @throws \SoapFault
+     */
+    private function getAxl()
+    {
+        return new SoapClient(storage_path('axl/AXLAPI.wsdl'),
+            [
+                'trace' => 1,
+                'exceptions' => true,
+                'location' => "https://{$this->selectedCluster->ip_address}:8443/axl/",
+                'login' => $this->selectedCluster->username,
+                'password' => $this->selectedCluster->password,
+                'connection_timeout' => '10',
+                'stream_context' => stream_context_create([
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false,
+                            'ciphers' => 'SHA1'
+                        ]
+                    ]
+                ),
+            ]
+        );
+    }
+
+    /**
+     * Reset props to start over
+     */
     private function resetProps()
     {
         $this->userList = [];
@@ -344,8 +386,14 @@ class UserSearch extends Component
         $this->currentJabberDevices = [];
         $this->jabberModelToAdd = '';
         $this->stagedForProvisioning = false;
+        $this->newDeviceName = '';
     }
 
+    /**
+     * Render the Livewire view
+     * 
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
     public function render()
     {
         return view('livewire.user-search');
