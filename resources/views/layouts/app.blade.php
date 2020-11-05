@@ -22,7 +22,13 @@
     <!-- Favicon -->
     <link href="{{ asset('img/favicon.png') }}" rel="icon" type="image/png">
 
+    <!-- Datatables CSS -->
+    <link href="https://cdn.datatables.net/v/bs4/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/r-2.2.3/datatables.min.css" rel="stylesheet" type="text/css" />
+
     @livewireStyles
+
+    <!-- Copy2Jabber Styles -->
+    <link href="{{ mix('/css/app.css') }}" rel="stylesheet" type="text/css" />
 
 </head>
 <body id="page-top">
@@ -33,7 +39,7 @@
     <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
         <!-- Sidebar - Brand -->
-        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ route('home') }}">
             <div class="sidebar-brand-icon rotate-n-15">
                 <i class="fas fa-fw fa-copy"></i>
             </div>
@@ -42,6 +48,20 @@
 
         <!-- Divider -->
         <hr class="sidebar-divider my-0">
+
+        <!-- Nav Item - Dashboard -->
+        <li class="nav-item {{ Nav::isRoute('home') }}">
+            <a class="nav-link" href="{{ route('home') }}">
+                <i class="fas fa-fw fa-tachometer-alt"></i>
+                <span>{{ __('Dashboard') }}</span></a>
+        </li>
+
+        <!-- Nav Item - Dashboard -->
+        <li class="nav-item {{ Nav::isResource('user') }}">
+            <a class="nav-link" href="{{ route('user.index') }}">
+                <i class="fas fa-fw fa-users"></i>
+                <span>{{ __('Users') }}</span></a>
+        </li>
 
         <!-- Divider -->
         <hr class="sidebar-divider d-none d-md-block">
@@ -112,6 +132,10 @@
             <!-- Begin Page Content -->
             <div class="container-fluid">
 
+                <div class="col-md-12">
+                    @include('flash::message')
+                </div>
+
                 @yield('main-content')
 
             </div>
@@ -154,9 +178,17 @@
 
 <!-- Scripts -->
 <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+
+<script>
+    $('div.alert').not('.alert-important').delay(3000).fadeOut(350);
+</script>
+
 <script src="{{ asset('vendor/bootstrap/js/bootstrap.min.js') }}"></script>
 <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
 <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
+<script src="https://cdn.datatables.net/v/bs4/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/r-2.2.3/datatables.min.js"></script>
+
+@stack('js')
 
 @livewireScripts
 

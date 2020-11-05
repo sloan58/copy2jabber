@@ -91,7 +91,7 @@ class UserSearch extends Component
                 'message' => $e->getMessage()
             ]);
 
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
         }
     }
 
@@ -132,7 +132,7 @@ class UserSearch extends Component
                 'message' => $e->getMessage()
             ]);
 
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
         }
     }
 
@@ -158,7 +158,7 @@ class UserSearch extends Component
             logger()->error('Uh oh....', [
                 'message' => $e->getMessage()
             ]);
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
         }
 
     }
@@ -181,7 +181,7 @@ class UserSearch extends Component
             logger()->error('Uh oh....', [
                 'message' => $e->getMessage()
             ]);
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
         }
     }
 
@@ -300,7 +300,7 @@ class UserSearch extends Component
                 'message' => $e->getMessage()
             ]);
             $this->resetProps();
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
             return redirect()->back();
         }
 
@@ -317,7 +317,7 @@ class UserSearch extends Component
                 'message' => $e->getMessage()
             ]);
             $this->resetProps();
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
             return redirect()->back();
         }
 
@@ -331,15 +331,14 @@ class UserSearch extends Component
 
             $this->resetProps();
 
-            request()->session()->flash('status', "Device Provisioned!  You can visit the device page at <a href=\"$url\" target=\"_blank\" >by clicking here.</a>");
-            request()->session()->flash('alert-class', 'success');
+            flash("Device Provisioned!  You can visit the device page at <a href=\"$url\" target=\"_blank\" >by clicking here.</a>")->success();
 
         } catch(\SoapFault $e) {
             logger()->error('Uh oh....', [
                 'message' => $e->getMessage()
             ]);
             $this->resetProps();
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
         }
     }
 
@@ -391,7 +390,7 @@ class UserSearch extends Component
 
     /**
      * Render the Livewire view
-     * 
+     *
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function render()

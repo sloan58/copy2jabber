@@ -1,1 +1,16 @@
-//
+// Custom Styles - Datatables
+.dataTables_filter {
+    display: inline-block;
+    float: right;
+    padding-right: 1.5rem;
+}
+
+.dataTables_length,
+.dataTables_info,
+.dt-buttons {
+    padding-left: 1.5rem;
+}
+
+.dataTables_paginate {
+    padding-right: 1.5rem;
+}
