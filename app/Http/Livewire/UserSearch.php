@@ -91,7 +91,7 @@ class UserSearch extends Component
                 'message' => $e->getMessage()
             ]);
 
-            flash($e->getMessage())->error();
+            request()->session()->flash('status', $e->getMessage());
         }
     }
 
