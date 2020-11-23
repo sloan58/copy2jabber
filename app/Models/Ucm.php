@@ -10,4 +10,15 @@ class Ucm extends Model
     use HasFactory;
 
     public $connection = 'phoenix';
+
+    /**
+     * Decrypt the Password when accessing
+     *
+     * @param $value
+     * @return string
+     */
+    public function getPasswordAttribute($value)
+    {
+        return decrypt($value);
+    }
 }
