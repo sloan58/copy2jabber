@@ -373,6 +373,7 @@ class UserSearch extends Component
             [
                 'trace' => 1,
                 'exceptions' => true,
+                'cache_wsdl' => WSDL_CACHE_NONE,
                 'location' => "https://{$this->selectedCluster->ip_address}:8443/axl/",
                 'login' => $this->selectedCluster->username,
                 'password' => $this->selectedCluster->password,
