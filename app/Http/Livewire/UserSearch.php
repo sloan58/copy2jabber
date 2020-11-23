@@ -87,11 +87,13 @@ class UserSearch extends Component
 
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@search', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
 
-            request()->session()->flash('status', $e->getMessage());
+            flash($e->getMessage())->error();
         }
     }
 
@@ -128,8 +130,10 @@ class UserSearch extends Component
             ));
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@getUserDevices', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
 
             flash($e->getMessage())->error();
@@ -155,9 +159,12 @@ class UserSearch extends Component
             $this->getDeviceLines();
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@deviceSelectionMade', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
+
             flash($e->getMessage())->error();
         }
 
@@ -178,9 +185,12 @@ class UserSearch extends Component
             $this->deviceLines = json_decode(json_encode($data), true);
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@getDeviceLines', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
+
             flash($e->getMessage())->error();
         }
     }
@@ -296,9 +306,12 @@ class UserSearch extends Component
             $url = sprintf('https://hq-cucm-pub.karmatek.io/ccmadmin/phoneEdit.do?key=%s', strtolower(str_replace(['{', '}'], '', $res->return)));
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@proceedToProvisioning:addPhone', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
+
             $this->resetProps();
             flash($e->getMessage())->error();
             return redirect()->back();
@@ -313,9 +326,12 @@ class UserSearch extends Component
             $associatedDeviceList[] = $this->newDeviceName;
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@proceedToProvisioning:getUser', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
+
             $this->resetProps();
             flash($e->getMessage())->error();
             return redirect()->back();
@@ -334,9 +350,12 @@ class UserSearch extends Component
             flash("Device Provisioned!  You can visit the device page at <a href=\"$url\" target=\"_blank\" >by clicking here.</a>")->success();
 
         } catch(\SoapFault $e) {
-            logger()->error('Uh oh....', [
-                'message' => $e->getMessage()
+            logger()->error('UserSearch@proceedToProvisioning:updateUser', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'stack' => $e
             ]);
+
             $this->resetProps();
             flash($e->getMessage())->error();
         }

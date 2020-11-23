@@ -1,12 +1,7 @@
 <div class="row">
-    @if (session('status'))
-        <div class="alert alert-{{ session('alert-class') ?? 'danger' }} border-left-{{ session('alert-class') ?? 'danger' }}" role="alert">
-            {!! session('status') !!}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
+    <div class="col-md-12">
+        @include('flash::message')
+    </div>
     <div class="container" xmlns:wire="http://www.w3.org/1999/xhtml">
             <div class="row">
                 <div class="card shadow col-md-12 mb-4">
