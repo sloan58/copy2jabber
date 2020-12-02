@@ -191,13 +191,48 @@
             </div>
         </div>
 
+
+        @if(count($availableServiceProfiles))
+        <div class="row">
+            <div class="card shadow col-md-12 mb-4">
+                <div class="card-header">
+                    <h6 class="font-weight-bold text-primary">
+                        Select a Service Profile for the User
+                        <div class="float-right">
+                            <div wire:loading.delay wire:target="selectJabberToProvision">
+                                <div class="spinner-border text-primary float-right" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </h6>
+                </div>
+                <div class="card-body">
+                @foreach($availableServiceProfiles as $sp)
+                    <a href="#" wire:click.prevent="selectServiceProfile('{{ $sp }}', true)">
+                        <div class="card bg-{{ ($serviceProfile === $sp) ? 'success': 'primary'}} text-white shadow mb-2">
+                            <div class="card-body">
+                                {{ $sp }}
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
         <div class="row">
             <div class="card shadow col-md-12 mb-4">
                 <div class="card-header">
                     <h6 class="font-weight-bold text-danger">
                         Provisioning Confirmation
                         <div class="float-right">
+                        @if(count($availableServiceProfiles))
+                            <div wire:loading.delay wire:target="selectServiceProfile">
+                        @else
                             <div wire:loading.delay wire:target="selectJabberToProvision">
+                        @endif
                                 <div class="spinner-border text-primary float-right" role="status">
                                     <span class="sr-only">Loading...</span>
                                 </div>
@@ -220,6 +255,7 @@
                             <li><b>New Device Type:</b> {{ $jabberModelToAdd['type'] }}</li>
                             <li><b>New Device Primary Line:</b> {{ $primaryLine['dnorpattern'] }} in {{ $primaryLine['partition'] }}</li>
                             <li><b>New Device User Association:</b> {{ $selectedUser['userid'] }}</li>
+                            <li><b>User Service Profile:</b> {{ $serviceProfile ?? $selectedUser['serviceprofile'] }}</li>
                         </ul>
                     </div>
                     <div class="card-footer text-muted float-right">

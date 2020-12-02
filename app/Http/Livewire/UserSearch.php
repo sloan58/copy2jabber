@@ -22,6 +22,8 @@ class UserSearch extends Component
     public $ucmClusters = [];
     public $selectedCluster = [];
     public $newDeviceName = '';
+    public $serviceProfile = null;
+    public $availableServiceProfiles = [];
     public $jabberDevicesList = [
         '562' => [
             'type' => 'Cisco Dual Mode for iPhone',
@@ -44,6 +46,7 @@ class UserSearch extends Component
             'length' => '12'
         ]
     ];
+
 
     /**
      * Livewire component was mounted
@@ -79,7 +82,7 @@ class UserSearch extends Component
 
         try {
             $res = $this->getAxl()->executeSQLQuery([
-                'sql' => "SELECT userid, firstname, lastname, mailid FROM enduser WHERE lower(userid) LIKE '%$search%'"
+                'sql' => "SELECT u.userid, u.firstname, u.lastname, u.mailid, sp.name serviceprofile FROM enduser u JOIN ucserviceprofile sp ON u.fkucserviceprofile = sp.pkid WHERE lower(userid) LIKE '%$search%'"
             ]);
 
             $data = isset($res->return->row) ? is_array($res->return->row) ? $res->return->row : [$res->return->row] : [];
@@ -178,7 +181,7 @@ class UserSearch extends Component
     {
         try {
             $res = $this->getAxl()->executeSQLQuery([
-                'sql' => "SELECT n.pkid, n.dnorpattern, n.description, m.numplanindex, p.name as partition FROM numplan n JOIN devicenumplanmap m ON n.pkid = m.fknumplan JOIN device d ON d.pkid = m.fkdevice JOIN routepartition p ON n.fkroutepartition = p.pkid WHERE d.name = '$this->selectedDevice'"
+                'sql' => "SELECT n.pkid, n.dnorpattern, n.description, m.numplanindex, p.name partition FROM numplan n JOIN devicenumplanmap m ON n.pkid = m.fknumplan JOIN device d ON d.pkid = m.fkdevice JOIN routepartition p ON n.fkroutepartition = p.pkid WHERE d.name = '$this->selectedDevice'"
             ]);
 
             $data = isset($res->return->row) ? is_array($res->return->row) ? $res->return->row : [$res->return->row] : [];
@@ -224,6 +227,52 @@ class UserSearch extends Component
             $deviceNameLength
         );
 
+        $this->checkServiceProfile();
+    }
+
+    /**
+     * Figure out or provide selection for
+     * the UC Service Profile
+     */
+    private function checkServiceProfile()
+    {
+        if(preg_match('/(.*)_DP/', $this->selectedDeviceDetails['devicePoolName']['_'], $matches)) {
+
+            try {
+                $res = $this->getAxl()->executeSQLQuery([
+                    'sql' => "SELECT name FROM ucserviceprofile WHERE name LIKE '$matches[1]%'"
+                ]);
+
+                $data = isset($res->return->row) ? is_array($res->return->row) ? $res->return->row : [$res->return->row] : [];
+
+                if(count($data) <= 1) {
+                    $this->selectServiceProfile($data[0]->name ?? null);
+                } else {
+                    $this->availableServiceProfiles = array_map(function($profile) {
+                        return $profile->name;
+                    }, $data);
+                }
+
+            } catch(\SoapFault $e) {
+                logger()->error('UserSearch@checkServiceProfile', [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'stack' => $e
+                ]);
+
+                flash($e->getMessage())->error();
+            }
+        }
+    }
+
+    /**
+     * Set the UC Service Profile
+     *
+     * @param $name
+     */
+    public function selectServiceProfile($name)
+    {
+        $this->serviceProfile = $name;
         $this->stagedForProvisioning = true;
         sleep(1);
     }
@@ -321,14 +370,13 @@ class UserSearch extends Component
             $res = $this->getAxl()->getUser([
                 'userid' => $this->selectedUser['userid'],
                 'returnedTags' => [
-                    'serviceProfile' => '',
                     'associatedDevices' => ''
                 ]
             ]);
 
             $associatedDeviceList = isset($res->return->user->associatedDevices->device) ? is_array($res->return->user->associatedDevices->device) ? $res->return->user->associatedDevices->device : [$res->return->user->associatedDevices->device] : [];
             $associatedDeviceList[] = $this->newDeviceName;
-            $currentServiceProfile = $res->return->user->serviceProfile->_;
+            $this->serviceProfile = $this->serviceProfile ?? $this->selectedUser['serviceprofile'];
 
         } catch(\SoapFault $e) {
             logger()->error('UserSearch@proceedToProvisioning:getUser', [
@@ -342,12 +390,6 @@ class UserSearch extends Component
             return redirect()->back();
         }
 
-        if(preg_match('/(.*)_DP/', $this->selectedDeviceDetails['devicePoolName']['_'], $matches)) {
-            $serviceProfileName = sprintf('%s_SP', $matches[1]);
-        } else {
-            $serviceProfileName = $currentServiceProfile;
-        }
-
         try {
             $this->getAxl()->updateUser([
                 'userid' => $this->selectedUser['userid'],
@@ -355,7 +397,7 @@ class UserSearch extends Component
                     'device' => $associatedDeviceList
                 ],
                 'serviceProfile' => [
-                    '_' => $serviceProfileName
+                    '_' => $this->serviceProfile
                 ]
             ]);
 
@@ -420,6 +462,8 @@ class UserSearch extends Component
         $this->jabberModelToAdd = '';
         $this->stagedForProvisioning = false;
         $this->newDeviceName = '';
+        $this->serviceProfile = null;
+        $this->availableServiceProfiles = [];
     }
 
     /**

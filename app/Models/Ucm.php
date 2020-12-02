@@ -22,7 +22,7 @@ class Ucm extends Model
         try {
             return decrypt($value);
         } catch(\Exception $e) {
-            info('error', ['message' => $e->getMessage()]);
+            logger()->debug('Ucm@getPasswordAttribute', ['message' => $e->getMessage()]);
             return $value;
         }
     }
