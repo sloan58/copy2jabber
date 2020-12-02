@@ -319,11 +319,16 @@ class UserSearch extends Component
 
         try {
             $res = $this->getAxl()->getUser([
-                'userid' => $this->selectedUser['userid']
+                'userid' => $this->selectedUser['userid'],
+                'returnedTags' => [
+                    'serviceProfile' => '',
+                    'associatedDevices' => ''
+                ]
             ]);
 
             $associatedDeviceList = isset($res->return->user->associatedDevices->device) ? is_array($res->return->user->associatedDevices->device) ? $res->return->user->associatedDevices->device : [$res->return->user->associatedDevices->device] : [];
             $associatedDeviceList[] = $this->newDeviceName;
+            $currentServiceProfile = $res->return->user->serviceProfile->_;
 
         } catch(\SoapFault $e) {
             logger()->error('UserSearch@proceedToProvisioning:getUser', [
@@ -337,11 +342,20 @@ class UserSearch extends Component
             return redirect()->back();
         }
 
+        if(preg_match('/(.*)_DP/', $this->selectedDeviceDetails['devicePoolName']['_'], $matches)) {
+            $serviceProfileName = sprintf('%s_SP', $matches[1]);
+        } else {
+            $serviceProfileName = $currentServiceProfile;
+        }
+
         try {
             $this->getAxl()->updateUser([
                 'userid' => $this->selectedUser['userid'],
                 'associatedDevices' => [
                     'device' => $associatedDeviceList
+                ],
+                'serviceProfile' => [
+                    '_' => $serviceProfileName
                 ]
             ]);
 

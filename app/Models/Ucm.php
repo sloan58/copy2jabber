@@ -19,6 +19,11 @@ class Ucm extends Model
      */
     public function getPasswordAttribute($value)
     {
-        return decrypt($value);
+        try {
+            return decrypt($value);
+        } catch(\Exception $e) {
+            info('error', ['message' => $e->getMessage()]);
+            return $value;
+        }
     }
 }
