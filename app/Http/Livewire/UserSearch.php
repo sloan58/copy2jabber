@@ -352,7 +352,11 @@ class UserSearch extends Component
                 'phone' => $newPhone
             ]);
 
-            $url = sprintf('https://hq-cucm-pub.karmatek.io/ccmadmin/phoneEdit.do?key=%s', strtolower(str_replace(['{', '}'], '', $res->return)));
+            $url = sprintf(
+                'https://%s/ccmadmin/phoneEdit.do?key=%s',
+                $this->selectedCluster->ip_address,
+                strtolower(str_replace(['{', '}'], '', $res->return))
+            );
 
         } catch(\SoapFault $e) {
             logger()->error('UserSearch@proceedToProvisioning:addPhone', [
