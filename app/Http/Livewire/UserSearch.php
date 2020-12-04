@@ -82,7 +82,7 @@ class UserSearch extends Component
 
         try {
             $res = $this->getAxl()->executeSQLQuery([
-                'sql' => "SELECT u.userid, u.firstname, u.lastname, u.mailid, sp.name serviceprofile FROM enduser u JOIN ucserviceprofile sp ON u.fkucserviceprofile = sp.pkid WHERE lower(userid) LIKE '%$search%'"
+                'sql' => "SELECT u.userid, u.firstname, u.lastname, u.mailid, sp.name serviceprofile FROM enduser u LEFT JOIN ucserviceprofile sp ON u.fkucserviceprofile = sp.pkid WHERE lower(userid) LIKE '%$search%'"
             ]);
 
             $data = isset($res->return->row) ? is_array($res->return->row) ? $res->return->row : [$res->return->row] : [];
