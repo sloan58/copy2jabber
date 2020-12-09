@@ -326,7 +326,7 @@ class UserSearch extends Component
             'devicePoolName' => [
                 '_' => $this->selectedDeviceDetails['devicePoolName']['_']
             ],
-            'description' => sprintf("%s %s %s", $this->selectedUser['firstname'], $this->selectedUser['lastname'], $deviceType),
+            'description' => $this->selectedDeviceDetails['description'],
             'callingSearchSpaceName' => [
                 '_' => $this->selectedDeviceDetails['callingSearchSpaceName']['_']
             ],
@@ -344,6 +344,9 @@ class UserSearch extends Component
             'useDevicePoolCgpnTransformCss' => $this->selectedDeviceDetails['useDevicePoolCgpnTransformCss'],
             'lines' => [
                 'line' => $jabberLine
+            ],
+            'ownerUserName' => [
+                '_' => $this->selectedUser['userid']
             ]
         ];
 
