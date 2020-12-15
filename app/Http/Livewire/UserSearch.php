@@ -17,11 +17,11 @@ class UserSearch extends Component
     public $primaryLine = [];
     public $nonJabberDevices = [];
     public $currentJabberDevices = [];
-    public $jabberModelToAdd = '';
+    public $jabberModelToAdd = [];
     public $stagedForProvisioning = false;
     public $ucmClusters = [];
     public $selectedCluster = [];
-    public $newDeviceName = '';
+    public $newJabberDevices = [];
     public $serviceProfile = null;
     public $availableServiceProfiles = [];
     public $jabberDevicesList = [
@@ -217,15 +217,15 @@ class UserSearch extends Component
      */
     public function selectJabberToProvision($jabberEnum)
     {
-        $this->jabberModelToAdd = $this->jabberDevicesList[$jabberEnum];
-
-        $devicePrefix = $this->jabberModelToAdd['prefix'];
-        $deviceNameLength = $this->jabberModelToAdd['length'];
-        $this->newDeviceName = substr(
-            strtoupper($devicePrefix . $this->selectedUser['firstname'][0] . $this->selectedUser['lastname']),
-            0,
-            $deviceNameLength
-        );
+        if(in_array($jabberEnum, array_keys($this->newJabberDevices))) {
+            unset($this->newJabberDevices[$jabberEnum]);
+        } else {
+            $this->newJabberDevices[$jabberEnum] = substr(
+                strtoupper($this->jabberDevicesList[$jabberEnum]['prefix'] . $this->selectedUser['firstname'][0] . $this->selectedUser['lastname']),
+                0,
+                $this->jabberDevicesList[$jabberEnum]['length']
+            );
+        }
 
         $this->checkServiceProfile();
     }
@@ -288,11 +288,10 @@ class UserSearch extends Component
     /**
      * Provision the new Jabber device
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return void
      */
     public function proceedToProvisioning()
     {
-        $deviceType = $this->jabberModelToAdd['type'];
 
         $jabberLine = [];
         $lineIterator = isset($this->selectedDeviceDetails['lines']['line']) ? isset($this->selectedDeviceDetails['lines']['line'][0]) ? $this->selectedDeviceDetails['lines']['line'] : [$this->selectedDeviceDetails['lines']['line']] : [];
@@ -306,122 +305,124 @@ class UserSearch extends Component
             }
         }
 
-        $newPhone = [
-            'name' => $this->newDeviceName,
-            'product' => $deviceType,
-            'class' => 'Phone',
-            'protocol' => 'SIP',
-            'protocolSide' => 'User',
-            'commonPhoneConfigName' => [
-                '_' => $this->selectedDeviceDetails['commonPhoneConfigName']['_']
-            ],
-            'locationName' => [
-                '_' => $this->selectedDeviceDetails['locationName']['_']
-            ],
-            'useTrustedRelayPoint' => 'Default',
-            'builtInBridgeStatus' => 'Default',
-            'packetCaptureMode' => 'None',
-            'certificateOperation' => 'No Pending Operation',
-            'deviceMobilityMode' => 'Default',
-            'devicePoolName' => [
-                '_' => $this->selectedDeviceDetails['devicePoolName']['_']
-            ],
-            'description' => $this->selectedDeviceDetails['description'],
-            'callingSearchSpaceName' => [
-                '_' => $this->selectedDeviceDetails['callingSearchSpaceName']['_']
-            ],
-            'mediaResourceListName' => [
-                '_' => $this->selectedDeviceDetails['mediaResourceListName']['_']
-            ],
-            'networkHoldMohAudioSourceId' => $this->selectedDeviceDetails['networkHoldMohAudioSourceId'],
-            'userHoldMohAudioSourceId' => $this->selectedDeviceDetails['userHoldMohAudioSourceId'],
-            'sipProfileName' => [
-                '_' => '' // Need to figure this one out
-            ],
-            'cgpnTransformationCssName' => [
-                '_' => $this->selectedDeviceDetails['cgpnTransformationCssName']['_']
-            ],
-            'useDevicePoolCgpnTransformCss' => $this->selectedDeviceDetails['useDevicePoolCgpnTransformCss'],
-            'lines' => [
-                'line' => $jabberLine
-            ],
-            'ownerUserName' => [
-                '_' => $this->selectedUser['userid']
-            ]
-        ];
+        array_walk($this->newJabberDevices, function($name, $enum) use ($jabberLine) {
 
-        try {
-            $res = $this->getAxl()->addPhone([
-                'phone' => $newPhone
-            ]);
+            $deviceType = $this->jabberDevicesList[$enum]['type'];
 
-            $url = sprintf(
-                'https://%s/ccmadmin/phoneEdit.do?key=%s',
-                $this->selectedCluster->ip_address,
-                strtolower(str_replace(['{', '}'], '', $res->return))
-            );
-
-        } catch(\SoapFault $e) {
-            logger()->error('UserSearch@proceedToProvisioning:addPhone', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'stack' => $e
-            ]);
-
-            $this->resetProps();
-            flash($e->getMessage())->error();
-            return redirect()->back();
-        }
-
-        try {
-            $res = $this->getAxl()->getUser([
-                'userid' => $this->selectedUser['userid'],
-                'returnedTags' => [
-                    'associatedDevices' => ''
-                ]
-            ]);
-
-            $associatedDeviceList = isset($res->return->user->associatedDevices->device) ? is_array($res->return->user->associatedDevices->device) ? $res->return->user->associatedDevices->device : [$res->return->user->associatedDevices->device] : [];
-            $associatedDeviceList[] = $this->newDeviceName;
-            $this->serviceProfile = $this->serviceProfile ?? $this->selectedUser['serviceprofile'];
-
-        } catch(\SoapFault $e) {
-            logger()->error('UserSearch@proceedToProvisioning:getUser', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'stack' => $e
-            ]);
-
-            $this->resetProps();
-            flash($e->getMessage())->error();
-            return redirect()->back();
-        }
-
-        try {
-            $this->getAxl()->updateUser([
-                'userid' => $this->selectedUser['userid'],
-                'associatedDevices' => [
-                    'device' => $associatedDeviceList
+            $newPhone = [
+                'name' => $name,
+                'product' => $deviceType,
+                'class' => 'Phone',
+                'protocol' => 'SIP',
+                'protocolSide' => 'User',
+                'commonPhoneConfigName' => [
+                    '_' => $this->selectedDeviceDetails['commonPhoneConfigName']['_']
                 ],
-                'serviceProfile' => [
-                    '_' => $this->serviceProfile
+                'locationName' => [
+                    '_' => $this->selectedDeviceDetails['locationName']['_']
+                ],
+                'useTrustedRelayPoint' => 'Default',
+                'builtInBridgeStatus' => 'Default',
+                'packetCaptureMode' => 'None',
+                'certificateOperation' => 'No Pending Operation',
+                'deviceMobilityMode' => 'Default',
+                'devicePoolName' => [
+                    '_' => $this->selectedDeviceDetails['devicePoolName']['_']
+                ],
+                'description' => $this->selectedDeviceDetails['description'],
+                'callingSearchSpaceName' => [
+                    '_' => $this->selectedDeviceDetails['callingSearchSpaceName']['_']
+                ],
+                'mediaResourceListName' => [
+                    '_' => $this->selectedDeviceDetails['mediaResourceListName']['_']
+                ],
+                'networkHoldMohAudioSourceId' => $this->selectedDeviceDetails['networkHoldMohAudioSourceId'],
+                'userHoldMohAudioSourceId' => $this->selectedDeviceDetails['userHoldMohAudioSourceId'],
+                'sipProfileName' => [
+                    '_' => '' // Need to figure this one out
+                ],
+                'cgpnTransformationCssName' => [
+                    '_' => $this->selectedDeviceDetails['cgpnTransformationCssName']['_']
+                ],
+                'useDevicePoolCgpnTransformCss' => $this->selectedDeviceDetails['useDevicePoolCgpnTransformCss'],
+                'lines' => [
+                    'line' => $jabberLine
+                ],
+                'ownerUserName' => [
+                    '_' => $this->selectedUser['userid']
                 ]
-            ]);
+            ];
 
-            $this->resetProps();
+            try {
+                $this->getAxl()->addPhone([
+                    'phone' => $newPhone
+                ]);
 
-            flash("Device Provisioned!  You can visit the device page at <a href=\"$url\" target=\"_blank\" >by clicking here.</a>")->success();
+            } catch(\SoapFault $e) {
+                logger()->error('UserSearch@proceedToProvisioning:addPhone', [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'stack' => $e
+                ]);
 
-        } catch(\SoapFault $e) {
-            logger()->error('UserSearch@proceedToProvisioning:updateUser', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'stack' => $e
-            ]);
+                $this->resetProps();
+                flash($e->getMessage())->error();
+                return redirect()->back();
+            }
 
-            $this->resetProps();
-            flash($e->getMessage())->error();
-        }
+            try {
+                $res = $this->getAxl()->getUser([
+                    'userid' => $this->selectedUser['userid'],
+                    'returnedTags' => [
+                        'associatedDevices' => ''
+                    ]
+                ]);
+
+                $associatedDeviceList = isset($res->return->user->associatedDevices->device) ? is_array($res->return->user->associatedDevices->device) ? $res->return->user->associatedDevices->device : [$res->return->user->associatedDevices->device] : [];
+                $associatedDeviceList[] = $name;
+                $this->serviceProfile = $this->serviceProfile ?? $this->selectedUser['serviceprofile'];
+                info('service profile', [is_array($this->serviceProfile)]);
+
+            } catch(\SoapFault $e) {
+                logger()->error('UserSearch@proceedToProvisioning:getUser', [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'stack' => $e
+                ]);
+
+                $this->resetProps();
+                flash($e->getMessage())->error();
+                return redirect()->back();
+            }
+
+            try {
+                $this->getAxl()->updateUser([
+                    'userid' => $this->selectedUser['userid'],
+                    'associatedDevices' => [
+                        'device' => $associatedDeviceList
+                    ],
+                    'serviceProfile' => [
+                        '_' => $this->serviceProfile
+                    ]
+                ]);
+
+            } catch(\SoapFault $e) {
+                logger()->error('UserSearch@proceedToProvisioning:updateUser', [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'stack' => $e
+                ]);
+
+                $this->resetProps();
+                flash($e->getMessage())->error();
+            }
+
+            return true;
+        });
+
+        $this->resetProps();
+
+        flash("Device(s) Provisioned!")->success();
     }
 
     /**
@@ -466,9 +467,9 @@ class UserSearch extends Component
         $this->primaryLine = [];
         $this->nonJabberDevices = [];
         $this->currentJabberDevices = [];
-        $this->jabberModelToAdd = '';
+        $this->jabberModelToAdd = [];
         $this->stagedForProvisioning = false;
-        $this->newDeviceName = '';
+        $this->newJabberDevices = [];
         $this->serviceProfile = null;
         $this->availableServiceProfiles = [];
     }

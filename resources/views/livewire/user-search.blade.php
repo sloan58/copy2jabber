@@ -170,10 +170,12 @@
                         @foreach($jabberDevicesList as $enum => $details)
                             @if(!in_array($enum, array_column($currentJabberDevices, 'enum')))
                                 <a href="#" wire:click.prevent="selectJabberToProvision('{{ $enum }}')">
-                                    <div class="card bg-{{ (isset($jabberModelToAdd['type']) && $details['type'] === $jabberModelToAdd['type']) ? 'success': 'primary'}} text-white shadow mb-2">
+                                    <div class="card bg-{{ in_array($enum, array_keys($newJabberDevices)) ? 'success': 'primary'}} text-white shadow mb-2">
                                         <div class="card-body">
                                             {{ $details['type'] }}
-                                            <div class="text-white-50 small float-right">{{ (isset($jabberModelToAdd['type']) && $details['type'] === $jabberModelToAdd['type']) ? '' : 'Click to Add' }}</div>
+                                            <div class="text-white-50 small float-right">
+                                                {{ in_array($enum, array_keys($newJabberDevices)) ? '' : 'Click to Add' }}
+                                            </div>
                                         </div>
                                     </div>
                                 </a>
@@ -225,14 +227,10 @@
         <div class="row">
             <div class="card shadow col-md-12 mb-4">
                 <div class="card-header">
-                    <h6 class="font-weight-bold text-danger">
+                    <div class="font-weight-bold text-danger">
                         Provisioning Confirmation
                         <div class="float-right">
-                        @if(count($availableServiceProfiles))
-                            <div wire:loading.delay wire:target="selectServiceProfile">
-                        @else
-                            <div wire:loading.delay wire:target="selectJabberToProvision">
-                        @endif
+                            <div wire:loading.delay wire:target={{count($availableServiceProfiles) ? 'selectServiceProfile' : 'selectJabberToProvision'}}>
                                 <div class="spinner-border text-primary float-right" role="status">
                                     <span class="sr-only">Loading...</span>
                                 </div>
@@ -243,20 +241,23 @@
                                 </div>
                             </div>
                         </div>
-                    </h6>
+                    </div>
                 </div>
                 @if($stagedForProvisioning)
+                    <div class="col-md-12 pt-2">
+                        <b>Source Device:</b> {{ $selectedDeviceDetails['name'] }} ({{ $selectedDeviceDetails['description'] }})
+                    </div>
                     <div class="card-body">
-                        <ul>
-                            <li><b>Source Device:</b> {{ $selectedDeviceDetails['name'] }} ({{ $selectedDeviceDetails['description'] }})</li>
-                        </ul>
-                        <ul>
-                            <li><b>New Device Name:</b> {{ $newDeviceName }}</li>
-                            <li><b>New Device Type:</b> {{ $jabberModelToAdd['type'] }}</li>
-                            <li><b>New Device Primary Line:</b> {{ $primaryLine['dnorpattern'] }} in {{ $primaryLine['partition'] }}</li>
-                            <li><b>New Device User Association:</b> {{ $selectedUser['userid'] }}</li>
-                            <li><b>User Service Profile:</b> {{ $serviceProfile ?? $selectedUser['serviceprofile'] }}</li>
-                        </ul>
+                        @foreach($newJabberDevices as $enum => $deviceName)
+                            <ul>
+                                <li><b>New Device Name:</b> {{ $deviceName }}</li>
+                                <li><b>New Device Type:</b> {{ $jabberDevicesList[$enum]['type'] }}</li>
+                                <li><b>New Device Primary Line:</b> {{ $primaryLine['dnorpattern'] }} in {{ $primaryLine['partition'] }}</li>
+                                <li><b>New Device User Association:</b> {{ $selectedUser['userid'] }}</li>
+                                <li><b>User Service Profile:</b> {{ $serviceProfile ?? $selectedUser['serviceprofile'] }}</li>
+                            </ul>
+                            <hr />
+                        @endforeach
                     </div>
                     <div class="card-footer text-muted float-right">
                         <button wire:click.prevent="proceedToProvisioning" type="button" class="btn btn-success">Accept</button>
