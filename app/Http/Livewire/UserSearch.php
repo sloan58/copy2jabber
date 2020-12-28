@@ -28,22 +28,22 @@ class UserSearch extends Component
         '562' => [
             'type' => 'Cisco Dual Mode for iPhone',
             'prefix' => 'TCT',
-            'length' => '12'
+            'length' => '15'
         ],
         '575' => [
             'type' => 'Cisco Dual Mode for Android',
             'prefix' => 'BOT',
-            'length' => '12'
+            'length' => '15'
         ],
         '503' => [
             'type' => 'Cisco Unified Client Services Framework',
             'prefix' => 'CSF',
-            'length' => '15'
+            'length' => '18'
         ],
         '652' => [
             'type' => 'Cisco Jabber for Tablet',
             'prefix' => 'TAB',
-            'length' => '12'
+            'length' => '15'
         ]
     ];
 
