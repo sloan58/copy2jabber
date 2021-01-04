@@ -307,6 +307,14 @@ class UserSearch extends Component
 
         array_walk($this->newJabberDevices, function($name, $enum) use ($jabberLine) {
 
+            if (preg_match('/hlog/i', $this->selectedDeviceDetails['softkeyTemplateName']['_'])) {
+                $isHlogDevice = true;
+            }
+
+//            'vendorConfig' => [
+//                'any' => '<ciscoSupportField>configurationfile=jabber-custom-config.xml</ciscoSupportField>'
+//            ]
+
             $deviceType = $this->jabberDevicesList[$enum]['type'];
 
             $newPhone = [
