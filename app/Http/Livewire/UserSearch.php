@@ -54,6 +54,9 @@ class UserSearch extends Component
      */
     public function mount()
     {
+        info("UserSearch@mount", [
+            'auth.user' => auth()->user()->name
+        ]);
         $this->ucmClusters = Ucm::all();
     }
 
@@ -66,6 +69,10 @@ class UserSearch extends Component
     {
         $this->resetProps();
         $this->selectedCluster = Ucm::find($clusterId);
+        info("UserSearch@clusterSelectionMade", [
+            'auth.user' => auth()->user()->name,
+            'cluster' => $this->selectedCluster->name
+        ]);
     }
 
     /**
@@ -89,6 +96,12 @@ class UserSearch extends Component
             $data = isset($res->return->row) ? is_array($res->return->row) ? $res->return->row : [$res->return->row] : [];
             $this->userList = json_decode(json_encode($data), true);
 
+            info("UserSearch@search", [
+                'auth.user' => auth()->user()->name,
+                'cluster' => $this->selectedCluster->name,
+                'search' => $search,
+                'userList' => $this->userList
+            ]);
 
         } catch(\SoapFault $e) {
             logger()->error('UserSearch@search', [
@@ -133,6 +146,15 @@ class UserSearch extends Component
                 }, $data)
             ));
 
+            info("UserSearch@getUserDevices", [
+                'auth.user' => auth()->user()->name,
+                'cluster' => $this->selectedCluster->name,
+                'userList' => $this->userList,
+                'selectedUser' => $this->selectedUser,
+                'currentJabberDevices' => $this->currentJabberDevices,
+                'nonJabberDevices' => $this->nonJabberDevices
+            ]);
+
         } catch(\SoapFault $e) {
             logger()->error('UserSearch@getUserDevices', [
                 'message' => $e->getMessage(),
@@ -164,6 +186,18 @@ class UserSearch extends Component
                 $this->isHlog = true;
             }
 
+            info("UserSearch@getUserDevices", [
+                'auth.user' => auth()->user()->name,
+                'cluster' => $this->selectedCluster->name,
+                'userList' => $this->userList,
+                'selectedUser' => $this->selectedUser,
+                'currentJabberDevices' => $this->currentJabberDevices,
+                'nonJabberDevices' => $this->nonJabberDevices,
+                'selectedDevice' => $this->selectedDevice,
+//                'selectedDeviceDetails' => $this->selectedDeviceDetails,
+                'isHlog' => $this->isHlog
+            ]);
+
             $this->getDeviceLines();
 
         } catch(\SoapFault $e) {
@@ -192,6 +226,19 @@ class UserSearch extends Component
             $data = isset($res->return->row) ? is_array($res->return->row) ? $res->return->row : [$res->return->row] : [];
             $this->deviceLines = json_decode(json_encode($data), true);
 
+            info("UserSearch@getUserDevices", [
+                'auth.user' => auth()->user()->name,
+                'cluster' => $this->selectedCluster->name,
+                'userList' => $this->userList,
+                'selectedUser' => $this->selectedUser,
+                'currentJabberDevices' => $this->currentJabberDevices,
+                'nonJabberDevices' => $this->nonJabberDevices,
+                'selectedDevice' => $this->selectedDevice,
+//                'selectedDeviceDetails' => $this->selectedDeviceDetails,
+                'isHlog' => $this->isHlog,
+                'deviceLines' => $this->deviceLines
+            ]);
+
         } catch(\SoapFault $e) {
             logger()->error('UserSearch@getDeviceLines', [
                 'message' => $e->getMessage(),
@@ -212,6 +259,21 @@ class UserSearch extends Component
     public function setPrimaryLine($linePkid)
     {
         $this->primaryLine = $this->deviceLines[array_search($linePkid, array_column($this->deviceLines, 'pkid'))];
+
+        info("UserSearch@getUserDevices", [
+            'auth.user' => auth()->user()->name,
+            'cluster' => $this->selectedCluster->name,
+            'userList' => $this->userList,
+            'selectedUser' => $this->selectedUser,
+            'currentJabberDevices' => $this->currentJabberDevices,
+            'nonJabberDevices' => $this->nonJabberDevices,
+            'selectedDevice' => $this->selectedDevice,
+//                'selectedDeviceDetails' => $this->selectedDeviceDetails,
+            'isHlog' => $this->isHlog,
+            'deviceLines' => $this->deviceLines,
+            'primaryLine' => $this->primaryLine
+        ]);
+
         sleep(1);
     }
 
@@ -222,6 +284,7 @@ class UserSearch extends Component
      */
     public function selectJabberToProvision($jabberEnum)
     {
+
         if(in_array($jabberEnum, array_keys($this->newJabberDevices))) {
             unset($this->newJabberDevices[$jabberEnum]);
         } else {
@@ -231,6 +294,22 @@ class UserSearch extends Component
                 $this->jabberDevicesList[$jabberEnum]['length']
             );
         }
+
+        info("UserSearch@getUserDevices", [
+            'auth.user' => auth()->user()->name,
+            'cluster' => $this->selectedCluster->name,
+            'userList' => $this->userList,
+            'selectedUser' => $this->selectedUser,
+            'currentJabberDevices' => $this->currentJabberDevices,
+            'nonJabberDevices' => $this->nonJabberDevices,
+            'selectedDevice' => $this->selectedDevice,
+//                'selectedDeviceDetails' => $this->selectedDeviceDetails,
+            'isHlog' => $this->isHlog,
+            'deviceLines' => $this->deviceLines,
+            'primaryLine' => $this->primaryLine,
+            'jabberDevicesList' => $this->jabberDevicesList,
+            'newJabberDevices' => $this->newJabberDevices
+        ]);
 
         $this->checkServiceProfile();
     }
@@ -256,6 +335,22 @@ class UserSearch extends Component
                     $this->availableServiceProfiles = array_map(function($profile) {
                         return $profile->name;
                     }, $data);
+                    info("UserSearch@getUserDevices", [
+                        'auth.user' => auth()->user()->name,
+                        'cluster' => $this->selectedCluster->name,
+                        'userList' => $this->userList,
+                        'selectedUser' => $this->selectedUser,
+                        'currentJabberDevices' => $this->currentJabberDevices,
+                        'nonJabberDevices' => $this->nonJabberDevices,
+                        'selectedDevice' => $this->selectedDevice,
+//                      'selectedDeviceDetails' => $this->selectedDeviceDetails,
+                        'isHlog' => $this->isHlog,
+                        'deviceLines' => $this->deviceLines,
+                        'primaryLine' => $this->primaryLine,
+                        'jabberDevicesList' => $this->jabberDevicesList,
+                        'newJabberDevices' => $this->newJabberDevices,
+                        'availableServiceProfiles' => $this->availableServiceProfiles
+                    ]);
                 }
 
             } catch(\SoapFault $e) {
@@ -279,6 +374,24 @@ class UserSearch extends Component
     {
         $this->serviceProfile = $name;
         $this->stagedForProvisioning = true;
+        info("UserSearch@getUserDevices", [
+            'auth.user' => auth()->user()->name,
+            'cluster' => $this->selectedCluster->name,
+            'userList' => $this->userList,
+            'selectedUser' => $this->selectedUser,
+            'currentJabberDevices' => $this->currentJabberDevices,
+            'nonJabberDevices' => $this->nonJabberDevices,
+            'selectedDevice' => $this->selectedDevice,
+//          'selectedDeviceDetails' => $this->selectedDeviceDetails,
+            'isHlog' => $this->isHlog,
+            'deviceLines' => $this->deviceLines,
+            'primaryLine' => $this->primaryLine,
+            'jabberDevicesList' => $this->jabberDevicesList,
+            'newJabberDevices' => $this->newJabberDevices,
+            'availableServiceProfiles' => $this->availableServiceProfiles,
+            'serviceProfile' => $this->serviceProfile,
+            'stagedForProvisioning' => $this->stagedForProvisioning
+        ]);
         sleep(1);
     }
 
