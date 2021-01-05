@@ -245,7 +245,7 @@
                 </div>
                 @if($stagedForProvisioning)
                     <div class="col-md-12 pt-2">
-                        <b>Source Device:</b> {{ $selectedDeviceDetails['name'] }} ({{ $selectedDeviceDetails['description'] }})
+                        <b>Source Device:</b> {{ $selectedDeviceDetails['name'] }} ({{ $selectedDeviceDetails['description'] }})  @if($isHlog) <small class="text-danger">*HLOG Device</small> @endif
                     </div>
                     <div class="card-body">
                         @foreach($newJabberDevices as $enum => $deviceName)
@@ -255,9 +255,11 @@
                                 <li><b>New Device Primary Line:</b> {{ $primaryLine['dnorpattern'] }} in {{ $primaryLine['partition'] }}</li>
                                 <li><b>New Device User Association:</b> {{ $selectedUser['userid'] }}</li>
                                 <li><b>User Service Profile:</b> {{ $serviceProfile ?? $selectedUser['serviceprofile'] }}</li>
+                                <li><b>Jabber Configuration File:</b> {{ $isHlog ? 'HLOG XML' : 'Standard XML' }}</li>
                             </ul>
-                            <hr />
+                            @if(!$loop->last)<hr>@endif
                         @endforeach
+
                     </div>
                     <div class="card-footer text-muted float-right">
                         <button wire:click.prevent="proceedToProvisioning" type="button" class="btn btn-success">Accept</button>

@@ -24,6 +24,7 @@ class UserSearch extends Component
     public $newJabberDevices = [];
     public $serviceProfile = null;
     public $availableServiceProfiles = [];
+    public $isHlog = false;
     public $jabberDevicesList = [
         '562' => [
             'type' => 'Cisco Dual Mode for iPhone',
@@ -158,6 +159,10 @@ class UserSearch extends Component
             ]);
 
             $this->selectedDeviceDetails = json_decode(json_encode($res->return->phone), true);
+
+            if (preg_match('/hlog/i', $this->selectedDeviceDetails['softkeyTemplateName']['_'])) {
+                $this->isHlog = true;
+            }
 
             $this->getDeviceLines();
 
@@ -307,14 +312,6 @@ class UserSearch extends Component
 
         array_walk($this->newJabberDevices, function($name, $enum) use ($jabberLine) {
 
-            if (preg_match('/hlog/i', $this->selectedDeviceDetails['softkeyTemplateName']['_'])) {
-                $isHlogDevice = true;
-            }
-
-//            'vendorConfig' => [
-//                'any' => '<ciscoSupportField>configurationfile=jabber-custom-config.xml</ciscoSupportField>'
-//            ]
-
             $deviceType = $this->jabberDevicesList[$enum]['type'];
 
             $newPhone = [
@@ -361,6 +358,12 @@ class UserSearch extends Component
                 ]
             ];
 
+            if ($this->isHlog) {
+                $newPhone['vendorConfig'] = [
+                    'any' => '<ciscoSupportField>configurationfile=jabber-hlog-config.xml</ciscoSupportField>'
+                ];
+            }
+
             try {
                 $this->getAxl()->addPhone([
                     'phone' => $newPhone
@@ -389,7 +392,6 @@ class UserSearch extends Component
                 $associatedDeviceList = isset($res->return->user->associatedDevices->device) ? is_array($res->return->user->associatedDevices->device) ? $res->return->user->associatedDevices->device : [$res->return->user->associatedDevices->device] : [];
                 $associatedDeviceList[] = $name;
                 $this->serviceProfile = $this->serviceProfile ?? $this->selectedUser['serviceprofile'];
-                info('service profile', [is_array($this->serviceProfile)]);
 
             } catch(\SoapFault $e) {
                 logger()->error('UserSearch@proceedToProvisioning:getUser', [
@@ -480,6 +482,7 @@ class UserSearch extends Component
         $this->newJabberDevices = [];
         $this->serviceProfile = null;
         $this->availableServiceProfiles = [];
+        $this->isHlog = false;
     }
 
     /**
