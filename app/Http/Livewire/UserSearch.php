@@ -186,6 +186,10 @@ class UserSearch extends Component
                 $this->isHlog = true;
             }
 
+            if(preg_match('/\s1H\s/', $this->selectedDeviceDetails['phoneTemplateName']['_'])) {
+                $this->isHlog = true;
+            }
+
             info("UserSearch@getUserDevices", [
                 'auth.user' => auth()->user()->name,
                 'cluster' => $this->selectedCluster->name,
@@ -434,7 +438,7 @@ class UserSearch extends Component
                 'protocol' => 'SIP',
                 'protocolSide' => 'User',
                 'commonPhoneConfigName' => [
-                    '_' => $this->selectedDeviceDetails['commonPhoneConfigName']['_']
+                    '_' => "Jabber Common Phone Profile"
                 ],
                 'locationName' => [
                     '_' => $this->selectedDeviceDetails['locationName']['_']
